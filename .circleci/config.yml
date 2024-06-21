@@ -1,20 +1,59 @@
 version: 2.1
 
+orbs:
+  node: circleci/node@4.0.0
+
+executors:
+  node-executor:
+    docker:
+      - image: circleci/node:16
+
 jobs:
   build:
-    docker:
-      - image: circleci/node:14
+    executor: node-executor
+    environment:
+      CC_TEST_REPORTER_ID: b6c739dba39b81a47ffc915053f3185cd1bb12cffeb11105a9a4f6ca7846df5d
     steps:
       - checkout
+      - run: npm install
       - run:
-          name: Install Dependencies
-          command: npm install
+          name: Install Code Climate test reporter
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
       - run:
-          name: Run Tests
-          command: npm test
+          name: Initialize Code Climate test reporter
+          command: ./cc-test-reporter before-build
+      - run:
+          name: Run Tests with Coverage
+          command: npx nyc npm run test:coverage
+      - run:
+          name: Format Coverage Report
+          command: npx nyc report --reporter=text-lcov > coverage.lcov
+      - run:
+          name: Upload Coverage Report to Code Climate
+          command: ./cc-test-reporter after-build -t lcov
+          when: always
+      - store_artifacts: 
+          path: ./coverage/lcov.info
+
+  deploy:
+    executor: node-executor
+    steps:
+      - checkout
+      - run: npm install
+      - run:
+          name: Install TypeScript
+          command: sudo npm install -g typescript
+      - run:
+          name: Build Project
+          command: npx tsc
 
 workflows:
   version: 2
-  build:
+  build_and_deploy:
     jobs:
       - build
+      - deploy:
+          requires:
+            - build
