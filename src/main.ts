@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import { setupSwagger } from './swagger.config';
+import { ValidationPipe } from '@nestjs/common';
+
 
 async function bootstrap() {
 
@@ -9,7 +11,12 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
   setupSwagger(app);
-  await app.listen(3000);
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist:true,
+  }))
   
+  await app.listen(3000);
+  console.log(`Welcome to BNR-Archive-Management-System!`);
 }
 bootstrap();

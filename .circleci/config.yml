@@ -1,31 +1,44 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/configuration-reference
+
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
-jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
+orbs:
+  node: circleci/node@4.0.0
+
+executors:
+  node-executor:
     docker:
-      # Specify the version you desire here
-      # See: https://circleci.com/developer/images/image/cimg/base
-      - image: cimg/base:current
+      - image: circleci/node:16
 
-    # Add steps to the job
-    # See: https://circleci.com/docs/jobs-steps/#steps-overview & https://circleci.com/docs/configuration-reference/#steps
+jobs:
+  build:
+    executor: node-executor
+    environment:
+      CC_TEST_REPORTER_ID: b6c739dba39b81a47ffc915053f3185cd1bb12cffeb11105a9a4f6ca7846df5d
     steps:
-      # Checkout the code as the first step.
+    
       - checkout
-      - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+      - run: npm install
+      - run: npm test 
+      
 
-# Orchestrate jobs using workflows
-# See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
+  deploy:
+    executor: node-executor
+    steps:
+      - checkout
+      - run: npm install
+      - run:
+          name: Install TypeScript
+          command: sudo npm install -g typescript
+      - run:
+          name: Build Project
+          command: npx tsc
+
+
 workflows:
-  say-hello-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
-    # Inside the workflow, you define the jobs you want to run.
+  version: 2
+  build_and_deploy:
     jobs:
-      - say-hello
+      - build
+      - deploy:
+          requires:
+            - build
