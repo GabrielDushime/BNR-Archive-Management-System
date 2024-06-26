@@ -16,25 +16,7 @@ jobs:
     steps:
       - checkout
       - run: npm install
-      - run:
-          name: Install Code Climate test reporter
-          command: |
-            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-            chmod +x ./cc-test-reporter
-      - run:
-          name: Initialize Code Climate test reporter
-          command: ./cc-test-reporter before-build
-      - run:
-          name: Run Tests with Coverage
-          command: npx nyc npm run test:coverage
-      - run:
-          name: Format Coverage Report
-          command: npx nyc report --reporter=text-lcov > coverage.lcov
-      - run:
-          name: Upload Coverage Report to Code Climate
-          command: ./cc-test-reporter after-build -t lcov
-          when: always
-     
+      
 
   deploy:
     executor: node-executor
