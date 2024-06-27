@@ -22,6 +22,7 @@ export class AuthService {
     try {
       const user = await this.prisma.users.create({
         data: {
+          
           firstName: dto.firstName,
           lastName: dto.lastName,
           email: dto.email,
@@ -30,7 +31,7 @@ export class AuthService {
         },
       });
 
-      const token = await this.SignToken(user.email, user.firstName, user.lastName, user.Role);
+      const token = await this.SignToken(user.email, user.firstName, user.lastName, user.Role,user.Id);
       return {
         message: 'User created successfully',
         token: token,
@@ -59,11 +60,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const token = await this.SignToken(user.email, user.firstName, user.lastName, user.Role);
+    const token = await this.SignToken(user.email, user.firstName, user.lastName, user.Role,user.Id);
     return {
       message: 'Sign in successful',
       token: token,
       user: {
+        Id:user.Id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -76,13 +78,16 @@ export class AuthService {
     firstName: string,
     lastName: string,
     email: string,
-    Role: string
+    Role: string,
+    Id:number
+    
   ): Promise<{ access_token: string }> {
     const payload = {
       firstName,
       lastName,
       email,
-      Role
+      Role,
+      Id
     };
     const secret = this.config.get('JWT_SECRET');
     const token = await this.jwt.signAsync(payload, {
