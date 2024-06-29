@@ -31,7 +31,7 @@ export class AuthService {
         },
       });
 
-      const token = await this.SignToken(user.email, user.firstName, user.lastName, user.Role,user.Id);
+      const token = await this.SignToken(user.Id,user.firstName, user.lastName,user.email,  user.Role);
       return {
         message: 'User created successfully',
         token: token,
@@ -60,26 +60,27 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const token = await this.SignToken(user.email, user.firstName, user.lastName, user.Role,user.Id);
+    const token = await this.SignToken(user.Id,user.firstName, user.lastName,user.email,  user.Role);
     return {
       message: 'Sign in successful',
       token: token,
       user: {
         Id:user.Id,
-        email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        email: user.email,
         Role: user.Role
       }
     };
   }
 
   async SignToken(
+    Id:number,
     firstName: string,
     lastName: string,
     email: string,
     Role: string,
-    Id:number
+   
     
   ): Promise<{ access_token: string }> {
     const payload = {

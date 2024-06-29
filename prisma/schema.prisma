@@ -6,39 +6,38 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model Users {
-  Id        Int      @id @default(autoincrement())
+  Id        Int        @id @default(autoincrement())
   firstName String?
   lastName  String?
-  email     String   @unique
+  email     String     @unique
   password  String
   Role      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  documents Documents[]
 }
 
 model cats {
-  Id           Int      @id @default(autoincrement())
+  Id           Int        @id @default(autoincrement())
   categoryName String
   description  String
-  docUpload    String[] @default([])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  docUpload    String[]   @default([])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  documents    Documents[]
 }
 
-
-
-model Document {
-  id            Int      @id @default(autoincrement())
+model Documents {
+  Id            Int      @id @default(autoincrement())
   docName       String
   docDescription String
-  docPath       String
-  categoryId    Int
-  userId        Int
-  userfirstName      String
+  fileUrl       String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  category      Cats     @relation(fields: [categoryId], references: [id])
+  categoryId    Int
+  userId        Int
+  userEmail     String
+  cats           cats      @relation(fields: [categoryId], references: [Id])
+  user          Users     @relation(fields: [userId], references: [Id])
 }

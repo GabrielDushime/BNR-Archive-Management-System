@@ -22,7 +22,7 @@ export class AuthController {
    //user signUp
    @ApiTags('User Management')
    @ApiBearerAuth('Authentication')
-   @UseGuards(AdminRoleGuard)
+   @UseGuards(AdminRoleGuard) 
    @ApiOperation({ summary: 'Adding a new User' })
   @Post('signup')
   @ApiBody({ type: AuthDto })
