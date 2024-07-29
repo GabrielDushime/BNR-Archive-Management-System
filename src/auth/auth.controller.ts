@@ -32,7 +32,7 @@ export class AuthController {
    }
 }
 @Controller('user')
- @UseGuards(AdminRoleGuard) 
+/*  @UseGuards(AdminRoleGuard)  */
 export class UserController {
   constructor(private authservice: AuthService) {}
   
