@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class AdminRoleGuard implements CanActivate {
+export class BothRoleGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly jwtService: JwtService,
@@ -22,7 +22,7 @@ export class AdminRoleGuard implements CanActivate {
     const secret = this.configService.get<string>('JWT_SECRET');
     const decoded = this.jwtService.verify(token, { secret });
 
-    if (decoded && decoded.Id && decoded.Role === 'admin') {
+    if (decoded && decoded.Id && decoded.Role === 'admin' || decoded.Role === 'user' ) {
       request.user = decoded; 
       return true;
     }

@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto, UpdateDocumentDto } from './dto';
 import { JwtService } from '@nestjs/jwt';
+import { ReadStream, createReadStream, existsSync } from 'fs';
 
+import { extname, join } from 'path';
 @Injectable()
 export class DocumentsService {
   constructor(
@@ -10,7 +12,7 @@ export class DocumentsService {
     private jwt: JwtService,
   ) {}
 
-  async addDocument(dto: CreateDocumentDto, files: Express.Multer.File[], categoryId: number, userId: number, userEmail: string) {
+  async addDocument(dto: CreateDocumentDto, files: Express.Multer.File[], categoryId: string, userId: string, userEmail: string) {
     const fileUrl = files.map(file => file.path).join(', ');
 
     const document = await this.prisma.documents.create({
@@ -42,8 +44,11 @@ export class DocumentsService {
         document
     } 
   }
+  async getAllDocuments() {
+    return await this.prisma.documents.findMany();
+  }
 
-  async getDocumentsByCategory(categoryId: number) {
+  async getDocumentsByCategory(categoryId: string) {
     const documents = await this.prisma.documents.findMany({
       where: { categoryId },
     });
@@ -54,8 +59,8 @@ export class DocumentsService {
 
     return documents;
   }
-
-  async getDocumentById(categoryId: number, documentId: number) {
+  
+  async getDocumentById(categoryId: string, documentId: string) {
     const document = await this.prisma.documents.findFirst({
       where: {
         Id: documentId,
@@ -69,13 +74,9 @@ export class DocumentsService {
 
     return document;
   }
-
-  async updateDocument(categoryId: number, documentId: number, dto: UpdateDocumentDto) {
+  async updateDocument(documentId: string, dto: UpdateDocumentDto) {
     const document = await this.prisma.documents.findFirst({
-      where: {
-        Id: documentId,
-        categoryId,
-      },
+      where: { Id: documentId },
     });
 
     if (!document) {
@@ -87,35 +88,15 @@ export class DocumentsService {
       data: {
         docName: dto.docName,
         docDescription: dto.docDescription,
-        
       },
     });
 
-    const categoryDocuments = await this.prisma.documents.findMany({
-      where: { categoryId },
-    });
-
-    await this.prisma.cats.update({
-      where: { Id: categoryId },
-      data: {
-        docUpload: {
-          set: categoryDocuments.map(doc => doc.Id.toString()),
-        },
-      },
-    });
-
-    return{
-        message: 'Document Updated successfully',
-        updatedDocument
-    } 
+    return { message: 'Document updated successfully', updatedDocument };
   }
 
-  async deleteDocument(categoryId: number, documentId: number) {
+  async deleteDocument(documentId: string) {
     const document = await this.prisma.documents.findFirst({
-      where: {
-        Id: documentId,
-        categoryId,
-      },
+      where: { Id: documentId },
     });
 
     if (!document) {
@@ -126,21 +107,58 @@ export class DocumentsService {
       where: { Id: documentId },
     });
 
-    const categoryDocuments = await this.prisma.documents.findMany({
-      where: { categoryId },
-    });
-
-    await this.prisma.cats.update({
-      where: { Id: categoryId },
-      data: {
-        docUpload: {
-          set: categoryDocuments.map(doc => doc.Id.toString()),
-        },
-      },
-    });
-
-    return {
-      message: 'Document deleted successfully',
-    };
+    return { message: 'Document deleted successfully' };
   }
+
+  
+ 
+  async findDocumentById(documentId: string): Promise<any> {
+    const document = await this.prisma.documents.findUnique({
+      where: { Id: documentId },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    return document;
+  }
+
+  
+  async getDocumentStream(documentId: string) {
+    const document = await this.findDocumentById(documentId);
+    const filePath = join(process.cwd(), document.fileUrl);
+
+    if (!existsSync(filePath)) {
+      throw new NotFoundException('File does not exist');
+    }
+
+   
+    return createReadStream(filePath);
+  }
+  async getDocumentsByUserId(userId: string) {
+    const documents = await this.prisma.documents.findMany({
+      where: { userId }
+    });
+
+    if (!documents.length) {
+      throw new NotFoundException('No documents found for this user');
+    }
+
+    return documents;
+  }
+  async searchDocumentsByName(docName: string) {
+    const documents = await this.prisma.documents.findMany({
+      where: { docName: { contains: docName, mode: 'insensitive' } },
+    });
+
+    if (!documents.length) {
+      throw new NotFoundException('No documents found');
+    }
+
+    return documents;
+  }
+
 }
+
+

@@ -6,38 +6,39 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model Users {
-  Id        Int        @id @default(autoincrement())
+  Id        String      @id @default(uuid())
   firstName String?
   lastName  String?
-  email     String     @unique
+  email     String      @unique
   password  String
   Role      String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  documents Documents[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  documents Documents[] // No onDelete here
 }
 
 model cats {
-  Id           Int        @id @default(autoincrement())
+  Id           String      @id @default(uuid())
   categoryName String
   description  String
-  docUpload    String[]   @default([])
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  documents    Documents[]
+  docUpload    String[]    @default([])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  documents    Documents[] // No onDelete here
 }
 
 model Documents {
-  Id            Int      @id @default(autoincrement())
-  docName       String
+  Id             String      @id @default(uuid())
+  docName        String
   docDescription String
-  fileUrl       String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  categoryId    Int
-  userId        Int
-  userEmail     String
-  cats           cats      @relation(fields: [categoryId], references: [Id])
-  user          Users     @relation(fields: [userId], references: [Id])
+  fileUrl        String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  categoryId     String
+  userId         String
+  userEmail      String
+  cats           cats        @relation(fields: [categoryId], references: [Id], onDelete: Cascade)
+  user           Users       @relation(fields: [userId], references: [Id], onDelete: Cascade)
 }

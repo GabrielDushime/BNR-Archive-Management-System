@@ -56,7 +56,7 @@ export class CategoriesService {
     };
   }
 
-  async getCatById(catId: number) {
+  async getCatById(catId: string) {
     const cat = await this.prisma.cats.findUnique({
       where: { Id: catId },
     });
@@ -72,7 +72,7 @@ export class CategoriesService {
     return await this.prisma.cats.findMany();
   }
 
-  async deleteCatById(catId: number) {
+  async deleteCatById(catId: string) {
     const cat = await this.prisma.cats.findUnique({
       where: { Id: catId },
     });
@@ -90,7 +90,7 @@ export class CategoriesService {
     };
   }
 
-  async updateCatById(catId: number, dto: CategoriesDto) {
+  async updateCatById(catId: string, dto: CategoriesDto) {
     const cat = await this.prisma.cats.findUnique({
       where: { Id: catId },
     });
