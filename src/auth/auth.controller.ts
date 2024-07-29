@@ -32,7 +32,7 @@ export class AuthController {
    }
 }
 @Controller('user')
-/*  @UseGuards(AdminRoleGuard)  */
+@UseGuards(AdminRoleGuard)  
 export class UserController {
   constructor(private authservice: AuthService) {}
   
@@ -41,7 +41,7 @@ export class UserController {
    //user signUp
    @ApiTags('User Management')
    @ApiBearerAuth('Authentication')
- /*  @UseGuards(AdminRoleGuard)   */
+   @UseGuards(AdminRoleGuard)   
    @ApiOperation({ summary: 'Adding a new User' })
   @Post('signup')
   @ApiBody({ type: AuthDto })
