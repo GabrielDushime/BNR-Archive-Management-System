@@ -41,7 +41,7 @@ export class UserController {
    //user signUp
    @ApiTags('User Management')
    @ApiBearerAuth('Authentication')
-  @UseGuards(AdminRoleGuard)  
+/*   @UseGuards(AdminRoleGuard)   */
    @ApiOperation({ summary: 'Adding a new User' })
   @Post('signup')
   @ApiBody({ type: AuthDto })
@@ -72,7 +72,7 @@ export class UserController {
   //Updating a User
   @ApiTags('User Management')
   @ApiBearerAuth('Authentication')
- @UseGuards(AdminRoleGuard)  
+
   @ApiOperation({ summary: 'Updating User by ID' })
   @Put('update/user/:id')
   updateUserById(@Param('id') id: string, @Body() dto:  UpdateDto) {
