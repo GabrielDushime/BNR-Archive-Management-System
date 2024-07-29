@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty,  IsString } from 'class-validator';
 
 export class CreateDocumentDto {
     @ApiProperty({ example: 'Workers' })

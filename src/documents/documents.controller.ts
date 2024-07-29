@@ -1,64 +1,139 @@
-import { Controller, Post, Get, Put, Delete, Param, Body, ParseIntPipe, UseInterceptors, UploadedFiles, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Param, Body, ParseIntPipe, UseInterceptors, UploadedFiles, UseGuards, Req, Res, HttpStatus, BadRequestException, NotFoundException, StreamableFile, Query } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto, UpdateDocumentDto } from './dto';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { UserRoleGuard } from 'src/auth/guards/user-role.guard';
+import { Response } from 'express';
+import { extname, join } from 'path';
+import { AdminRoleGuard } from 'src/auth/guards/admin-role.guard';
+import { createReadStream, existsSync } from 'fs';
+import { BothRoleGuard } from 'src/auth/guards/both-role.guard';
 
-@ApiTags('Documents Management')
-@UseGuards(UserRoleGuard)
+@Controller('document')
+  
+@ApiTags('Documents Management') 
 @ApiBearerAuth('Authentication')
-@Controller('documents')
+
+
 export class DocumentsController {
   constructor(private documentsService: DocumentsService) {}
 
   @Post('add/:categoryId')
+  @UseGuards(UserRoleGuard)
   @ApiOperation({ summary: 'Add a new document to a category' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(AnyFilesInterceptor())
   async addDocument(
-    @Param('categoryId', ParseIntPipe) categoryId: number,
+    @Param('categoryId') categoryId: string,
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Body() dto: CreateDocumentDto,
     @Req() req
   ) {
-   console.log(req.user);  
+    //console.log(req.user)  
     const userId = req.user.Id; 
     const userEmail = req.user.email;
     return this.documentsService.addDocument(dto, files, categoryId, userId, userEmail);
   }
-
+  @Get('search')
+  @UseGuards(BothRoleGuard)
+  @ApiOperation({ summary: 'Search for documents by name' })
+  async searchDocumentsByName(@Query('docName') name: string) {
+   return this.documentsService.searchDocumentsByName(name);
+   
+  }
+  @Get('documents')
+  @UseGuards(AdminRoleGuard)
+  @ApiOperation({ summary: 'Get all Documents' })
+  getAllcats() {
+    return this.documentsService.getAllDocuments();
+  }
   @Get(':categoryId')
   @ApiOperation({ summary: 'Get all documents from a category' })
-  async getDocumentsByCategory(@Param('categoryId', ParseIntPipe) categoryId: number) {
+  async getDocumentsByCategory(@Param('categoryId') categoryId: string) {
     return this.documentsService.getDocumentsByCategory(categoryId);
   }
 
+ 
+  @Put(':documentId')
+  @UseGuards(BothRoleGuard)
+  @ApiOperation({ summary: 'Update a document' })
+  async updateDocument(
+    @Param('documentId') documentId: string,
+    @Body() dto: UpdateDocumentDto,
+  ) {
+    return this.documentsService.updateDocument(documentId, dto);
+  }
+
+  @Delete(':documentId')
+  @UseGuards(BothRoleGuard)
+  @ApiOperation({ summary: 'Delete a document' })
+  async deleteDocument(@Param('documentId') documentId: string) {
+    return this.documentsService.deleteDocument(documentId);
+  }
+
+  @Get('download/:documentId')
+  @UseGuards(BothRoleGuard)
+  @ApiOperation({ summary: 'Download a document' })
+  async downloadDocument(
+    @Param('documentId') documentId: string,
+    @Res({ passthrough: true }) res: Response
+  ): Promise<StreamableFile> {
+    try {
+      const document = await this.documentsService.findDocumentById(documentId);
+      const filePath = join(process.cwd(), document.fileUrl);
+
+      if (!existsSync(filePath)) {
+        throw new NotFoundException('File does not exist');
+      }
+
+      const fileExtension = filePath.split('.').pop();
+      const mimeType = this.getMimeType(fileExtension);
+
+      res.set({
+        'Content-Type': mimeType,
+        'Content-Disposition': `attachment; filename="${documentId}.${fileExtension}"`,
+      });
+
+      const fileStream = createReadStream(filePath);
+      return new StreamableFile(fileStream);
+    } catch (error) {
+      throw new NotFoundException('Document not found');
+    }
+  }
+
+  private getMimeType(extension: string): string {
+    switch (extension) {
+      case 'pdf': return 'application/pdf';
+      case 'jpg': case 'jpeg': return 'image/jpeg';
+      case 'png': return 'image/png';
+      case 'txt': return 'text/plain';
+      default: return 'application/octet-stream';
+    }
+  }
+  @Get('user/documents')
+  @UseGuards(UserRoleGuard)
+  @ApiOperation({ summary: 'Get all documents of the logged-in user' })
+  async getDocumentsByUserId(@Req() req) {
+    const userId = req.user.Id;
+    return this.documentsService.getDocumentsByUserId(userId);
+  }
+
+
+ 
+
   @Get(':categoryId/:documentId')
+  @UseGuards(BothRoleGuard)
   @ApiOperation({ summary: 'Get a single document by ID from a category' })
   async getDocumentById(
-    @Param('categoryId', ParseIntPipe) categoryId: number,
-    @Param('documentId', ParseIntPipe) documentId: number
+    @Param('categoryId') categoryId: string,
+    @Param('documentId') documentId: string
   ) {
     return this.documentsService.getDocumentById(categoryId, documentId);
   }
 
-  @Put(':categoryId/:documentId')
-  @ApiOperation({ summary: 'Update a document in a category' })
-  async updateDocument(
-    @Param('categoryId', ParseIntPipe) categoryId: number,
-    @Param('documentId', ParseIntPipe) documentId: number,
-    @Body() dto: UpdateDocumentDto
-  ) {
-    return this.documentsService.updateDocument(categoryId, documentId, dto);
-  }
-
-  @Delete(':categoryId/:documentId')
-  @ApiOperation({ summary: 'Delete a document from a category' })
-  async deleteDocument(
-    @Param('categoryId', ParseIntPipe) categoryId: number,
-    @Param('documentId', ParseIntPipe) documentId: number
-  ) {
-    return this.documentsService.deleteDocument(categoryId, documentId);
-  }
 }
+
+
+
+

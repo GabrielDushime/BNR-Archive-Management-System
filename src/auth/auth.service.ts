@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, UnauthorizedException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthDto } from "./dto";
-import * as argon from 'argon2'
+import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { SignInDto } from "./dto/signin.dto";
 import { JwtService } from "@nestjs/jwt";
@@ -10,6 +10,8 @@ import { UpdateDto } from "./dto/update.dto";
 
 @Injectable({})
 export class AuthService {
+  private blacklistedTokens: Set<string> = new Set(); // Token blacklist
+
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
@@ -22,7 +24,6 @@ export class AuthService {
     try {
       const user = await this.prisma.users.create({
         data: {
-          
           firstName: dto.firstName,
           lastName: dto.lastName,
           email: dto.email,
@@ -31,7 +32,7 @@ export class AuthService {
         },
       });
 
-      const token = await this.SignToken(user.Id,user.firstName, user.lastName,user.email,  user.Role);
+      const token = await this.SignToken(user.Id, user.firstName, user.lastName, user.email, user.Role);
       return {
         message: 'User created successfully',
         token: token,
@@ -60,12 +61,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const token = await this.SignToken(user.Id,user.firstName, user.lastName,user.email,  user.Role);
+    const token = await this.SignToken(user.Id, user.firstName, user.lastName, user.email, user.Role);
     return {
       message: 'Sign in successful',
       token: token,
       user: {
-        Id:user.Id,
+        Id: user.Id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -75,13 +76,11 @@ export class AuthService {
   }
 
   async SignToken(
-    Id:number,
+    Id: string,
     firstName: string,
     lastName: string,
     email: string,
     Role: string,
-   
-    
   ): Promise<{ access_token: string }> {
     const payload = {
       firstName,
@@ -100,7 +99,7 @@ export class AuthService {
     };
   }
 
-  async getUserById(userId: number) {
+  async getUserById(userId: string) {
     const user = await this.prisma.users.findUnique({
       where: { Id: userId },
     });
@@ -116,7 +115,7 @@ export class AuthService {
     return await this.prisma.users.findMany();
   }
 
-  async deleteUserById(userId: number) {
+  async deleteUserById(userId: string) {
     const user = await this.prisma.users.findUnique({
       where: { Id: userId },
     });
@@ -133,7 +132,8 @@ export class AuthService {
       message: 'User deleted successfully'
     };
   }
-  async updateUserById(userId: number, dto: UpdateDto) {
+
+  async updateUserById(userId: string, dto: UpdateDto) {
     const user = await this.prisma.users.findUnique({
       where: { Id: userId },
     });
@@ -153,5 +153,20 @@ export class AuthService {
     });
 
     return updatedUser;
+  }
+
+  async logout(token: string) {
+    this.blacklistedTokens.add(token);
+    return {
+      message: 'Successfully logged out'
+    };
+  }
+
+  isTokenBlacklisted(token: string): boolean {
+    return this.blacklistedTokens.has(token);
+  }
+
+  getJwtSecret(): string {
+    return this.config.get('JWT_SECRET');
   }
 }

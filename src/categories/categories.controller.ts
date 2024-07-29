@@ -5,7 +5,7 @@ import { CategoriesService } from "./categories.service";
 import { AdminRoleGuard } from "src/auth/guards/admin-role.guard";
 
 @ApiTags('Categories Management')
-@UseGuards(AdminRoleGuard)
+/* @UseGuards(AdminRoleGuard) */
 @ApiBearerAuth('Authentication')
 @Controller('categories')
 export class CategoriesController {
@@ -28,19 +28,19 @@ export class CategoriesController {
 
   @ApiOperation({ summary: 'Get cat by ID' })
   @Get('cat/:id')
-  getCatById(@Param('id', ParseIntPipe) id: number) {
+  getCatById(@Param('id') id: string) {
     return this.categoriesService.getCatById(id);
   }
 
   @ApiOperation({ summary: 'Updating cat by ID' })
   @Put('update/cat/:id')
-  updateCatById(@Param('id', ParseIntPipe) id: number, @Body() dto: CategoriesDto) {
+  updateCatById(@Param('id') id: string, @Body() dto: CategoriesDto) {
     return this.categoriesService.updateCatById(id, dto);
   }
 
   @ApiOperation({ summary: 'Delete cat by ID' })
   @Delete('/delete/cat/:id')
-  deleteCatById(@Param('id', ParseIntPipe) id: number) {
+  deleteCatById(@Param('id') id: string) {
     return this.categoriesService.deleteCatById(id);
   }
 }
