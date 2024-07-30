@@ -2,18 +2,32 @@ import { Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto, UpdateDocumentDto } from './dto';
 import { JwtService } from '@nestjs/jwt';
-import { ReadStream, createReadStream, existsSync } from 'fs';
 
-import { extname, join } from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+
+import axios from 'axios';
+import { Readable } from 'stream';
 @Injectable()
 export class DocumentsService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
+
   ) {}
 
+  async uploadToCloudinary(file: Express.Multer.File): Promise<UploadApiResponse | UploadApiErrorResponse> {
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream((error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }).end(file.buffer);
+    });
+  }
+
   async addDocument(dto: CreateDocumentDto, files: Express.Multer.File[], categoryId: string, userId: string, userEmail: string) {
-    const fileUrl = files.map(file => file.path).join(', ');
+    const uploadResults = await Promise.all(files.map(file => this.uploadToCloudinary(file)));
+    const fileUrl = uploadResults.map(result => result.secure_url).join(', ');
 
     const document = await this.prisma.documents.create({
       data: {
@@ -39,10 +53,10 @@ export class DocumentsService {
       },
     });
 
-    return{
-        message: 'Document added to the category Successfully',
-        document
-    } 
+    return {
+      message: 'Document added to the category successfully',
+      document,
+    };
   }
   async getAllDocuments() {
     return await this.prisma.documents.findMany();
@@ -125,17 +139,15 @@ export class DocumentsService {
   }
 
   
-  async getDocumentStream(documentId: string) {
+  async getDocumentStream(documentId: string): Promise<StreamableFile> {
     const document = await this.findDocumentById(documentId);
-    const filePath = join(process.cwd(), document.fileUrl);
+    const fileUrl = document.fileUrl;
 
-    if (!existsSync(filePath)) {
-      throw new NotFoundException('File does not exist');
-    }
+    const response = await axios.get<Readable>(fileUrl, { responseType: 'stream' });
 
-   
-    return createReadStream(filePath);
+    return new StreamableFile(response.data);
   }
+
   async getDocumentsByUserId(userId: string) {
     const documents = await this.prisma.documents.findMany({
       where: { userId }
@@ -158,6 +170,8 @@ export class DocumentsService {
 
     return documents;
   }
+
+
 
 }
 
