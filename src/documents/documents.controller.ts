@@ -73,30 +73,30 @@ export class DocumentsController {
     return this.documentsService.deleteDocument(documentId);
   }
 
-  
   @Get('download/:documentId')
   @UseGuards(BothRoleGuard)
   @ApiOperation({ summary: 'Download a document' })
   async downloadDocument(
     @Param('documentId') documentId: string,
-    @Res({ passthrough: true }) res: Response
-  ): Promise<StreamableFile> {
+    @Res() res: Response
+  ) {
     try {
       const document = await this.documentsService.findDocumentById(documentId);
       const fileExtension = document.fileUrl.split('.').pop();
       const mimeType = this.getMimeType(fileExtension);
-
+  
       res.set({
         'Content-Type': mimeType,
         'Content-Disposition': `attachment; filename="${documentId}.${fileExtension}"`,
       });
-
-      return await this.documentsService.getDocumentStream(documentId);
+  
+      const documentStream = await this.documentsService.getDocumentStream(documentId);
+      documentStream.pipe(res); 
     } catch (error) {
       throw new NotFoundException('Document not found');
     }
   }
-
+  
   private getMimeType(extension: string): string {
     switch (extension) {
       case 'pdf': return 'application/pdf';

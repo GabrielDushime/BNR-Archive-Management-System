@@ -139,13 +139,12 @@ export class DocumentsService {
   }
 
   
-  async getDocumentStream(documentId: string): Promise<StreamableFile> {
+  async getDocumentStream(documentId: string): Promise<Readable> {
     const document = await this.findDocumentById(documentId);
     const fileUrl = document.fileUrl;
-
+  
     const response = await axios.get<Readable>(fileUrl, { responseType: 'stream' });
-
-    return new StreamableFile(response.data);
+    return response.data; 
   }
 
   async getDocumentsByUserId(userId: string) {
