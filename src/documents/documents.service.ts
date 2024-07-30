@@ -2,12 +2,13 @@ import { Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto, UpdateDocumentDto } from './dto';
 import { JwtService } from '@nestjs/jwt';
-
+import axios from 'axios';
 import { v2 as cloudinary } from 'cloudinary';
 import { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
-
-import axios from 'axios';
 import { Readable } from 'stream';
+
+
+
 @Injectable()
 export class DocumentsService {
   constructor(
@@ -15,6 +16,7 @@ export class DocumentsService {
     private jwt: JwtService,
 
   ) {}
+  
 
   async uploadToCloudinary(file: Express.Multer.File): Promise<UploadApiResponse | UploadApiErrorResponse> {
     return new Promise((resolve, reject) => {
@@ -139,13 +141,6 @@ export class DocumentsService {
   }
 
   
-  async getDocumentStream(documentId: string): Promise<Readable> {
-    const document = await this.findDocumentById(documentId);
-    const fileUrl = document.fileUrl;
-  
-    const response = await axios.get<Readable>(fileUrl, { responseType: 'stream' });
-    return response.data; 
-  }
 
   async getDocumentsByUserId(userId: string) {
     const documents = await this.prisma.documents.findMany({
@@ -170,8 +165,40 @@ export class DocumentsService {
     return documents;
   }
 
+  async getDocumentStream(fileUrl: string): Promise<Readable> {
+    try {
+      console.log(`Fetching file from URL: ${fileUrl}`);
+
+      const response = await axios.get(fileUrl, { responseType: 'stream' });
+
+      if (response.status !== 200) {
+        throw new Error(`Failed to fetch document from Cloudinary. Status code: ${response.status}`);
+      }
+
+      return response.data as Readable;
+    } catch (error) {
+      console.error(`Failed to fetch document: ${error.message}`);
+      throw new Error('Failed to fetch document from Cloudinary');
+    }
+  }
+
+  async generateDownloadUrl(publicId: string): Promise<string> {
+    try {
+      return cloudinary.url(publicId, {
+        resource_type: 'auto',
+        type: 'authenticated', // This might require additional configuration on Cloudinary
+        sign_url: true, // Ensure URL signing is enabled if needed
+        secure: true,
+      });
+    } catch (error) {
+      console.error(`Failed to generate download URL: ${error.message}`);
+      throw new Error('Failed to generate download URL');
+    }
+  }
+
+  
+  }
 
 
-}
 
 

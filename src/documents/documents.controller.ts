@@ -4,11 +4,10 @@ import { CreateDocumentDto, UpdateDocumentDto } from './dto';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { UserRoleGuard } from 'src/auth/guards/user-role.guard';
-import { Response } from 'express';
-import {  join } from 'path';
 import { AdminRoleGuard } from 'src/auth/guards/admin-role.guard';
-import { createReadStream, existsSync } from 'fs';
 import { BothRoleGuard } from 'src/auth/guards/both-role.guard';
+import { Response } from 'express';
+
 
 
 @Controller('document')
@@ -55,6 +54,35 @@ export class DocumentsController {
     return this.documentsService.getDocumentsByCategory(categoryId);
   }
 
+  @Get('download/:documentId')
+
+ 
+ 
+
+  @Get('download/:documentId')
+  async downloadDocument(@Param('documentId') documentId: string, @Res() res: Response) {
+    try {
+      const document = await this.documentsService.findDocumentById(documentId);
+
+      if (!document || !document.fileUrl) {
+        throw new NotFoundException('Document or file URL not found');
+      }
+
+      const fileStream = await this.documentsService.getDocumentStream(document.fileUrl);
+
+      res.setHeader('Content-Disposition', 'attachment; filename=document.pdf');
+      res.setHeader('Content-Type', 'application/pdf');
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error(`Error in downloadDocument: ${error.message}`);
+      
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+        message: 'Failed to stream the document',
+        error: error.message,
+      });
+    }
+  }
+
  
   @Put(':documentId')
   @UseGuards(BothRoleGuard)
@@ -72,41 +100,7 @@ export class DocumentsController {
   async deleteDocument(@Param('documentId') documentId: string) {
     return this.documentsService.deleteDocument(documentId);
   }
-
-  @Get('download/:documentId')
-  @UseGuards(BothRoleGuard)
-  @ApiOperation({ summary: 'Download a document' })
-  async downloadDocument(
-    @Param('documentId') documentId: string,
-    @Res() res: Response
-  ) {
-    try {
-      const document = await this.documentsService.findDocumentById(documentId);
-      const fileExtension = document.fileUrl.split('.').pop();
-      const mimeType = this.getMimeType(fileExtension);
-  
-      res.set({
-        'Content-Type': mimeType,
-        'Content-Disposition': `attachment; filename="${documentId}.${fileExtension}"`,
-      });
-  
-      const documentStream = await this.documentsService.getDocumentStream(documentId);
-      documentStream.pipe(res); 
-    } catch (error) {
-      throw new NotFoundException('Document not found');
-    }
-  }
-  
-  private getMimeType(extension: string): string {
-    switch (extension) {
-      case 'pdf': return 'application/pdf';
-      case 'jpg':
-      case 'jpeg': return 'image/jpeg';
-      case 'png': return 'image/png';
-      case 'txt': return 'text/plain';
-      default: return 'application/octet-stream';
-    }
-  }
+ 
 
   @Get('user/documents')
   @UseGuards(UserRoleGuard)
