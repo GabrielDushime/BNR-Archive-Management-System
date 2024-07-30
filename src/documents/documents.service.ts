@@ -167,7 +167,7 @@ export class DocumentsService {
 
   async getDocumentStream(fileUrl: string): Promise<Readable> {
     try {
-      console.log(`Fetching file from URL: ${fileUrl}`);
+     
 
       const response = await axios.get(fileUrl, { responseType: 'stream' });
 
@@ -186,8 +186,8 @@ export class DocumentsService {
     try {
       return cloudinary.url(publicId, {
         resource_type: 'auto',
-        type: 'authenticated', // This might require additional configuration on Cloudinary
-        sign_url: true, // Ensure URL signing is enabled if needed
+        type: 'authenticated', 
+        sign_url: true, 
         secure: true,
       });
     } catch (error) {
@@ -198,7 +198,3 @@ export class DocumentsService {
 
   
   }
-
-
-
-

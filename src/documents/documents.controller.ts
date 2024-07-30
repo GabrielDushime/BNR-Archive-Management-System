@@ -7,6 +7,7 @@ import { UserRoleGuard } from 'src/auth/guards/user-role.guard';
 import { AdminRoleGuard } from 'src/auth/guards/admin-role.guard';
 import { BothRoleGuard } from 'src/auth/guards/both-role.guard';
 import { Response } from 'express';
+import { extname } from 'path';
 
 
 
@@ -54,28 +55,49 @@ export class DocumentsController {
     return this.documentsService.getDocumentsByCategory(categoryId);
   }
 
-  @Get('download/:documentId')
-
- 
- 
 
   @Get('download/:documentId')
   async downloadDocument(@Param('documentId') documentId: string, @Res() res: Response) {
     try {
       const document = await this.documentsService.findDocumentById(documentId);
-
+  
       if (!document || !document.fileUrl) {
         throw new NotFoundException('Document or file URL not found');
       }
-
+  
       const fileStream = await this.documentsService.getDocumentStream(document.fileUrl);
-
-      res.setHeader('Content-Disposition', 'attachment; filename=document.pdf');
-      res.setHeader('Content-Type', 'application/pdf');
+      const fileExtension = extname(document.fileUrl) || '.pdf'; 
+      const fileName = `document${fileExtension}`;
+  
+      const mimeTypeMap: { [key: string]: string } = {
+        '.pdf': 'application/pdf',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.doc': 'application/msword',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.xls': 'application/vnd.ms-excel',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.txt': 'text/plain',
+        '.csv': 'text/csv',
+        '.zip': 'application/zip',
+        '.rar': 'application/x-rar-compressed',
+        '.gif': 'image/gif',
+        '.bmp': 'image/bmp',
+        '.tiff': 'image/tiff',
+        '.ico': 'image/x-icon',
+        '.svg': 'image/svg+xml',
+        '.webp': 'image/webp',
+      };
+  
+      const mimeType = mimeTypeMap[fileExtension.toLowerCase()] || 'application/octet-stream';
+  
+      res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+      res.setHeader('Content-Type', mimeType);
       fileStream.pipe(res);
     } catch (error) {
       console.error(`Error in downloadDocument: ${error.message}`);
-      
+  
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
         message: 'Failed to stream the document',
         error: error.message,
@@ -124,7 +146,3 @@ export class DocumentsController {
   }
 
 }
-
-
-
-
