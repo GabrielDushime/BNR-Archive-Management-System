@@ -66,7 +66,7 @@ export class DocumentsController {
       }
   
       const fileStream = await this.documentsService.getDocumentStream(document.fileUrl);
-      const fileExtension = extname(document.fileUrl) || '.pdf'; 
+      const fileExtension = extname(document.fileUrl) ; 
       const fileName = `document${fileExtension}`;
   
       const mimeTypeMap: { [key: string]: string } = {
