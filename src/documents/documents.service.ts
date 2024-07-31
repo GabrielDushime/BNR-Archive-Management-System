@@ -167,20 +167,19 @@ export class DocumentsService {
 
   async getDocumentStream(fileUrl: string): Promise<Readable> {
     try {
-     
-
       const response = await axios.get(fileUrl, { responseType: 'stream' });
-
+  
       if (response.status !== 200) {
         throw new Error(`Failed to fetch document from Cloudinary. Status code: ${response.status}`);
       }
-
+  
       return response.data as Readable;
     } catch (error) {
-      console.error(`Failed to fetch document: ${error.message}`);
-      throw new Error('Failed to fetch document from Cloudinary');
+      console.error(`Failed to fetch document from Cloudinary: ${error.message}`);
+      throw new Error(`Failed to fetch document from Cloudinary: ${error.message}`);
     }
   }
+  
 
   async generateDownloadUrl(publicId: string): Promise<string> {
     try {

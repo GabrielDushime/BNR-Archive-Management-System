@@ -55,7 +55,6 @@ export class DocumentsController {
     return this.documentsService.getDocumentsByCategory(categoryId);
   }
 
-
   @Get('download/:documentId')
   async downloadDocument(@Param('documentId') documentId: string, @Res() res: Response) {
     try {
@@ -66,44 +65,34 @@ export class DocumentsController {
       }
   
       const fileStream = await this.documentsService.getDocumentStream(document.fileUrl);
-      const fileExtension = extname(document.fileUrl) ; 
+      const fileExtension = extname(document.fileUrl);
       const fileName = `document${fileExtension}`;
   
       const mimeTypeMap: { [key: string]: string } = {
         '.pdf': 'application/pdf',
         '.jpg': 'image/jpeg',
         '.jpeg': 'image/jpeg',
-        '.png': 'image/png',
-        '.doc': 'application/msword',
-        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        '.xls': 'application/vnd.ms-excel',
-        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        '.txt': 'text/plain',
-        '.csv': 'text/csv',
-        '.zip': 'application/zip',
-        '.rar': 'application/x-rar-compressed',
-        '.gif': 'image/gif',
-        '.bmp': 'image/bmp',
-        '.tiff': 'image/tiff',
-        '.ico': 'image/x-icon',
-        '.svg': 'image/svg+xml',
-        '.webp': 'image/webp',
+       
       };
   
       const mimeType = mimeTypeMap[fileExtension.toLowerCase()] || 'application/octet-stream';
   
       res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
       res.setHeader('Content-Type', mimeType);
+  
+     
+      console.log(`Streaming file: ${fileName} with MIME type: ${mimeType}`);
+  
       fileStream.pipe(res);
     } catch (error) {
       console.error(`Error in downloadDocument: ${error.message}`);
-  
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
         message: 'Failed to stream the document',
         error: error.message,
       });
     }
   }
+  
 
  
   @Put(':documentId')
