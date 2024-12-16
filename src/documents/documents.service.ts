@@ -7,16 +7,12 @@ import { v2 as cloudinary } from 'cloudinary';
 import { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { Readable } from 'stream';
 
-
-
 @Injectable()
 export class DocumentsService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
-
   ) {}
-  
 
   async uploadToCloudinary(file: Express.Multer.File): Promise<UploadApiResponse | UploadApiErrorResponse> {
     return new Promise((resolve, reject) => {
@@ -27,60 +23,124 @@ export class DocumentsService {
     });
   }
 
-  async addDocument(dto: CreateDocumentDto, files: Express.Multer.File[], categoryId: string, userId: string, userEmail: string) {
+  async addDocument(dto: CreateDocumentDto, files: Express.Multer.File[], directorateId: string, departmentId: string, divisionId: string, typeId: string, userId: string, userEmail: string) {
+
+    // Fetch directorate, department, and division
+    const directorate = await this.prisma.directorates.findUnique({
+      where: { Id: directorateId },
+    });
+  
+    if (!directorate) {
+      throw new NotFoundException('Directorate not found');
+    }
+  
+    const department = await this.prisma.departments.findUnique({
+      where: { Id: departmentId },
+    });
+  
+    if (!department) {
+      throw new NotFoundException('Department not found');
+    }
+  
+    const division = await this.prisma.divisions.findUnique({
+      where: { Id: divisionId },
+    });
+  
+    if (!division) {
+      throw new NotFoundException('Division not found');
+    }
+  
+    const type = await this.prisma.types.findUnique({
+      where: { Id: typeId },
+    });
+  
+    if (!type) {
+      throw new NotFoundException('Type not found');
+    }
+  
+    
+    const firstLetterDirectorate = directorate.directorateName.charAt(0).toUpperCase();
+    const firstLetterDepartment = department.departmentName.charAt(0).toUpperCase();
+    const firstLetterDivision = division.divisionName.charAt(0).toUpperCase();
+  
+    const existingDocuments = await this.prisma.documents.count({
+      where: {
+        directorateId,
+        departmentId,
+        divisionId,
+      },
+    });
+  
+    const referenceId = `${firstLetterDirectorate}${firstLetterDepartment}${firstLetterDivision}${existingDocuments + 1}`;
+  
+    
     const uploadResults = await Promise.all(files.map(file => this.uploadToCloudinary(file)));
     const fileUrl = uploadResults.map(result => result.secure_url).join(', ');
-
+  
+   
     const document = await this.prisma.documents.create({
       data: {
         docName: dto.docName,
         docDescription: dto.docDescription,
         fileUrl,
-        categoryId,
+        typeId,
+        divisionId,
+        typeName: type.typeName,
+        divisionName: division.divisionName,
         userId,
         userEmail,
+        directorateId,
+        departmentId,
+        directorateName: directorate.directorateName,
+        departmentName: department.departmentName,
+        referenceId,
       },
     });
-
-    const categoryDocuments = await this.prisma.documents.findMany({
-      where: { categoryId },
-    });
-
-    await this.prisma.cats.update({
-      where: { Id: categoryId },
+  
+    
+    await this.prisma.types.update({
+      where: { Id: typeId },
       data: {
         docUpload: {
-          set: categoryDocuments.map(doc => doc.Id.toString()),
+          push: document.Id,
         },
       },
     });
-
+  
     return {
-      message: 'Document added to the category successfully',
+      message: 'Document added to the type successfully',
       document,
     };
   }
+  
+
   async getAllDocuments() {
     return await this.prisma.documents.findMany();
   }
 
-  async getDocumentsByCategory(categoryId: string) {
+  async getDocumentsByType(typeId: string) {
     const documents = await this.prisma.documents.findMany({
-      where: { categoryId },
+      where: { typeId },
     });
 
     if (!documents.length) {
-      throw new NotFoundException('No documents found for this category');
+      throw new NotFoundException('No documents found for this type');
     }
 
     return documents;
   }
-  
-  async getDocumentById(categoryId: string, documentId: string) {
+
+  async getDocumentById(directorateId: string,departmentId: string,divisionId: string,typeId: string,  documentId: string) {
     const document = await this.prisma.documents.findFirst({
       where: {
+        directorateId,
+        departmentId,
+        divisionId,
+        typeId,
         Id: documentId,
-        categoryId,
+      
+    
+        
       },
     });
 
@@ -90,6 +150,7 @@ export class DocumentsService {
 
     return document;
   }
+
   async updateDocument(documentId: string, dto: UpdateDocumentDto) {
     const document = await this.prisma.documents.findFirst({
       where: { Id: documentId },
@@ -126,8 +187,6 @@ export class DocumentsService {
     return { message: 'Document deleted successfully' };
   }
 
-  
- 
   async findDocumentById(documentId: string): Promise<any> {
     const document = await this.prisma.documents.findUnique({
       where: { Id: documentId },
@@ -140,8 +199,6 @@ export class DocumentsService {
     return document;
   }
 
-  
-
   async getDocumentsByUserId(userId: string) {
     const documents = await this.prisma.documents.findMany({
       where: { userId }
@@ -153,6 +210,7 @@ export class DocumentsService {
 
     return documents;
   }
+
   async searchDocumentsByName(docName: string) {
     const documents = await this.prisma.documents.findMany({
       where: { docName: { contains: docName, mode: 'insensitive' } },
@@ -168,18 +226,17 @@ export class DocumentsService {
   async getDocumentStream(fileUrl: string): Promise<Readable> {
     try {
       const response = await axios.get(fileUrl, { responseType: 'stream' });
-  
+
       if (response.status !== 200) {
         throw new Error(`Failed to fetch document from Cloudinary. Status code: ${response.status}`);
       }
-  
+
       return response.data as Readable;
     } catch (error) {
       console.error(`Failed to fetch document from Cloudinary: ${error.message}`);
       throw new Error(`Failed to fetch document from Cloudinary: ${error.message}`);
     }
   }
-  
 
   async generateDownloadUrl(publicId: string): Promise<string> {
     try {
@@ -194,6 +251,16 @@ export class DocumentsService {
       throw new Error('Failed to generate download URL');
     }
   }
+  async searchDocumentsByReferenceId(referenceId: string) {
+    const documents = await this.prisma.documents.findMany({
+      where: { referenceId: { contains: referenceId, mode: 'insensitive' } },
+    });
 
-  
+    if (!documents.length) {
+      throw new NotFoundException('No documents found with this reference ID');
+    }
+
+    return documents;
   }
+
+}

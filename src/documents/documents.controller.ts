@@ -8,6 +8,7 @@ import { AdminRoleGuard } from 'src/auth/guards/admin-role.guard';
 import { BothRoleGuard } from 'src/auth/guards/both-role.guard';
 import { Response } from 'express';
 import { extname } from 'path';
+import { superRoleGuard } from 'src/auth/guards/super.guard';
 
 
 
@@ -19,43 +20,59 @@ import { extname } from 'path';
 
 export class DocumentsController {
   constructor(private documentsService: DocumentsService) {}
-  @Post('add/:categoryId')
+  
+ 
+  @Post('add/:directorateId/:departmentId/:divisionId/:typeId')
   @UseGuards(UserRoleGuard)
-  @ApiOperation({ summary: 'Add a new document to a category' })
+  @ApiOperation({ summary: 'Add a new document to a type' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(AnyFilesInterceptor())
   async addDocument(
-    @Param('categoryId') categoryId: string,
+    @Param('directorateId') directorateId: string,
+    @Param('departmentId') departmentId: string,
+    @Param('divisionId') divisionId: string,
+    @Param('typeId') typeId: string,
+   
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Body() dto: CreateDocumentDto,
     @Req() req
   ) {
     const userId = req.user.Id;
     const userEmail = req.user.email;
-    return this.documentsService.addDocument(dto, files, categoryId, userId, userEmail);
+    return this.documentsService.addDocument(dto, files,directorateId,departmentId, divisionId, typeId, userId, userEmail);
   }
+  @Get('search/referenceId')
+   @UseGuards(BothRoleGuard,superRoleGuard) 
+   @ApiOperation({ summary: 'Search for documents by reference ID' })
+   async searchDocumentsByReferenceId(@Query('referenceId') referenceId: string) {
+    return this.documentsService.searchDocumentsByReferenceId(referenceId);
+    
+   }
+  
 
   @Get('search')
-  @UseGuards(BothRoleGuard)
+   @UseGuards(BothRoleGuard,superRoleGuard) 
   @ApiOperation({ summary: 'Search for documents by name' })
   async searchDocumentsByName(@Query('docName') name: string) {
    return this.documentsService.searchDocumentsByName(name);
    
   }
+ 
 
   @Get('documents')
-  @UseGuards(AdminRoleGuard)
+ @UseGuards(superRoleGuard) 
   @ApiOperation({ summary: 'Get all Documents' })
   getAllcats() {
     return this.documentsService.getAllDocuments();
   }
-  @Get(':categoryId')
-  @ApiOperation({ summary: 'Get all documents from a category' })
-  async getDocumentsByCategory(@Param('categoryId') categoryId: string) {
-    return this.documentsService.getDocumentsByCategory(categoryId);
+  @Get(':typeId')
+  @ApiOperation({ summary: 'Get all documents from a type' })
+  async getDocumentsByType(@Param('typeId') typeId: string) {
+    return this.documentsService.getDocumentsByType(typeId);
   }
 
   @Get('download/:documentId')
+  @ApiOperation({ summary: 'Download document from cloudinary' })
   async downloadDocument(@Param('documentId') documentId: string, @Res() res: Response) {
     try {
       const document = await this.documentsService.findDocumentById(documentId);
@@ -93,11 +110,11 @@ export class DocumentsController {
     }
   }
   
-
+ 
  
   @Put(':documentId')
-  @UseGuards(BothRoleGuard)
-  @ApiOperation({ summary: 'Update a document' })
+   @UseGuards(BothRoleGuard) 
+  @ApiOperation({ summary: 'Update a document in a type' })
   async updateDocument(
     @Param('documentId') documentId: string,
     @Body() dto: UpdateDocumentDto,
@@ -106,8 +123,8 @@ export class DocumentsController {
   }
 
   @Delete(':documentId')
-  @UseGuards(BothRoleGuard)
-  @ApiOperation({ summary: 'Delete a document' })
+   @UseGuards(BothRoleGuard) 
+  @ApiOperation({ summary: 'Delete a document from a type' })
   async deleteDocument(@Param('documentId') documentId: string) {
     return this.documentsService.deleteDocument(documentId);
   }
@@ -124,14 +141,21 @@ export class DocumentsController {
 
  
 
-  @Get(':categoryId/:documentId')
-  @UseGuards(BothRoleGuard)
-  @ApiOperation({ summary: 'Get a single document by ID from a category' })
+  @Get(':directorateId/:departmentId/:divisionId/typeId/:documentId')
+  @UseGuards(BothRoleGuard) 
+  @ApiOperation({ summary: 'Get a single document by ID from a directorate and department' })
   async getDocumentById(
-    @Param('categoryId') categoryId: string,
+    @Param('directorateId') directorateId: string,
+    @Param('departmentId') departmentId: string,
+    @Param('divisionId') divisionId: string,
+    @Param('typeId') typeId: string,
     @Param('documentId') documentId: string
   ) {
-    return this.documentsService.getDocumentById(categoryId, documentId);
+    return this.documentsService.getDocumentById( directorateId,departmentId,divisionId,typeId,documentId);
   }
+  
+  
+
+
 
 }

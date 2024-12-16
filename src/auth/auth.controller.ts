@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthDto } from "./dto";
@@ -7,6 +7,7 @@ import { UpdateDto } from "./dto/update.dto";
 import { AdminRoleGuard } from "./guards/admin-role.guard";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { Request } from 'express';
+import { superRoleGuard } from "./guards/super.guard";
 
 @Controller('auth')
 
@@ -32,24 +33,20 @@ export class AuthController {
    }
 }
 @Controller('user')
-@UseGuards(AdminRoleGuard)  
+ @UseGuards(superRoleGuard)  
 export class UserController {
   constructor(private authservice: AuthService) {}
   
 
 
-   //user signUp
-   @ApiTags('User Management')
-   @ApiBearerAuth('Authentication')
-   @UseGuards(AdminRoleGuard)   
-   @ApiOperation({ summary: 'Adding a new User' })
+  @ApiTags('User Management')
+  @ApiBearerAuth('Authentication')
+  @ApiOperation({ summary: 'Adding a new User' })
   @Post('signup')
   @ApiBody({ type: AuthDto })
-
   signup(@Body() dto: AuthDto) {
     return this.authservice.signup(dto);
   }
-
 
   //Getting All Users
   @ApiTags('User Management')
@@ -72,7 +69,7 @@ export class UserController {
   //Updating a User
   @ApiTags('User Management')
   @ApiBearerAuth('Authentication')
- @UseGuards(AdminRoleGuard)  
+ @UseGuards(JwtAuthGuard,AdminRoleGuard)  
   @ApiOperation({ summary: 'Updating User by ID' })
   @Put('update/user/:id')
   updateUserById(@Param('id') id: string, @Body() dto:  UpdateDto) {
@@ -88,4 +85,7 @@ export class UserController {
     return this.authservice.deleteUserById(id);
   }
  
+
+
+
 }

@@ -1,7 +1,7 @@
-import { IsEmail, IsNotEmpty, IsString } from "class-validator";
+import { IsArray, IsEmail, IsNotEmpty, IsString, IsUUID } from "class-validator";
 import { ApiProperty } from '@nestjs/swagger';
 
-export class AuthDto{
+export class AuthDto {
   @ApiProperty({ example: 'Gabriel' })
   @IsString()
   @IsNotEmpty()
@@ -25,9 +25,15 @@ export class AuthDto{
   @ApiProperty({ example: 'user', default: 'user' })
   @IsString()
   @IsNotEmpty()
-  Role: string ; 
+  Role: string;
+
+  @ApiProperty({ example: ['Directorate-id1', 'Directorate-id2'] })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsNotEmpty({ each: true })
+  directorateIds: string[];
 
   constructor() {
-  this.Role = 'user';
+    this.Role = 'user';
   }
 }

@@ -22,7 +22,7 @@ export class BothRoleGuard implements CanActivate {
     const secret = this.configService.get<string>('JWT_SECRET');
     const decoded = this.jwtService.verify(token, { secret });
 
-    if (decoded && decoded.Id && decoded.Role === 'admin' || decoded.Role === 'user' ) {
+    if (decoded && decoded.Id && decoded.Role === 'admin' || decoded.Role === 'user'|| decoded.Role === 'super-admin' ) {
       request.user = decoded; 
       return true;
     }

@@ -1,5 +1,5 @@
 
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateDto {
@@ -22,8 +22,18 @@ export class UpdateDto {
     @IsString()
     @IsNotEmpty()
     Role: string ; 
+
+
+
+  @ApiProperty({ example: ['Directorate-id1', 'Directorate-id2'] })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsNotEmpty({ each: true })
+  directorateIds: string[];
+
   
     constructor() {
     this.Role = 'user';
     }
+    
 }
