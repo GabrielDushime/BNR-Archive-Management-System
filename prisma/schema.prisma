@@ -8,108 +8,97 @@ datasource db {
 }
 
 model Users {
-  Id             String       @id @default(uuid())
-  firstName      String?
-  lastName       String?
-  email          String       @unique
-  password       String
-  Role           String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  documents      Documents[]
-  directorateNames String[]           @default([])
-  directorates   UserDirectorate[]
- 
+  Id               String            @id @default(uuid())
+  firstName        String?
+  lastName         String?
+  email            String            @unique
+  password         String
+  Role             String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  directorateNames String[]          @default([])
+  documents        Documents[]
+  directorates     UserDirectorate[]
 }
+
 model Documents {
-  Id             String       @id @default(uuid())
-  referenceId    String       @unique
-  docName        String
-  docDescription String
-  fileUrl        String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  directorateId  String?
+  Id              String        @id @default(uuid())
+  referenceId     String        @unique
+  docName         String
+  docDescription  String
+  fileUrl         String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  directorateId   String?
   directorateName String?
-  departmentId   String?
-  departmentName String?
-  divisionId     String?
-  divisionName   String?
-  typeName       String?
-  typeId         String?
- 
-  userId         String
-  userEmail      String
-  
-  directorates   directorates? @relation(fields: [directorateId], references: [Id], onDelete: Cascade)
-  user           Users?        @relation(fields: [userId], references: [Id], onDelete: Cascade)
-  departments    departments?  @relation("DepartmentDocuments", fields: [departmentId], references: [Id], onDelete: Cascade, map: "Documents_departmentId_fkey")
-  divisions      divisions?    @relation("DivisionDocuments", fields: [divisionId], references: [Id], onDelete: Cascade, map: "Documents_divisionId_fkey")
-  types          types?        @relation("TypeDocuments", fields: [typeId], references: [Id], onDelete: Cascade, map: "Documents_typeId_fkey")
+  departmentId    String?
+  departmentName  String?
+  divisionId      String?
+  divisionName    String?
+  typeName        String?
+  typeId          String?
+  userId          String
+  userEmail       String
+  departments     departments?  @relation("DepartmentDocuments", fields: [departmentId], references: [Id], onDelete: Cascade, map: "Documents_departmentId_fkey")
+  directorates    directorates? @relation(fields: [directorateId], references: [Id], onDelete: Cascade)
+  divisions       divisions?    @relation("DivisionDocuments", fields: [divisionId], references: [Id], onDelete: Cascade, map: "Documents_divisionId_fkey")
+  types           types?        @relation("TypeDocuments", fields: [typeId], references: [Id], onDelete: Cascade, map: "Documents_typeId_fkey")
+  user            Users         @relation(fields: [userId], references: [Id], onDelete: Cascade)
 }
-
-
-
 
 model directorates {
-  Id             String       @id @default(uuid())
-  directorateName String      @unique
-  description    String
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  departments    departments[] @relation("DirectorateDepartments")
-  documents      Documents[]
-  users          UserDirectorate[]
+  Id              String            @id @default(uuid())
+  directorateName String            @unique
+  description     String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  documents       Documents[]
+  users           UserDirectorate[]
+  departments     departments[]     @relation("DirectorateDepartments")
 }
 
 model departments {
-  Id             String      @id @default(uuid())
-  departmentName String      @unique
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  directorateId  String?
-  directorateName String?  
-  divisions      divisions[] @relation("DivisionDepartments")
-  documents      Documents[] @relation("DepartmentDocuments")
-  directorates   directorates? @relation("DirectorateDepartments", fields: [directorateId], references: [Id], onDelete: Cascade)
+  Id              String        @id @default(uuid())
+  departmentName  String        @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  directorateId   String?
+  directorateName String?
+  documents       Documents[]   @relation("DepartmentDocuments")
+  directorates    directorates? @relation("DirectorateDepartments", fields: [directorateId], references: [Id], onDelete: Cascade)
+  divisions       divisions[]   @relation("DivisionDepartments")
 }
 
-
 model UserDirectorate {
-  userId         String
-
-  directorateId  String
-  directorateNames String[] 
- 
-  user           Users        @relation(fields: [userId], references: [Id], onDelete: Cascade)
-  directorate    directorates @relation(fields: [directorateId], references: [Id], onDelete: Cascade)
-
+  userId           String
+  directorateId    String
+  directorateNames String[]
+  directorate      directorates @relation(fields: [directorateId], references: [Id], onDelete: Cascade)
+  user             Users        @relation(fields: [userId], references: [Id], onDelete: Cascade)
 
   @@id([userId, directorateId])
 }
 
 model divisions {
-  Id             String      @id @default(uuid())
-  divisionName   String      @unique
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  Id             String       @id @default(uuid())
+  divisionName   String       @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   departmentId   String?
-  departmentName String?  
-  documents      Documents[] @relation("DivisionDocuments")
-  types          types[]     @relation("DivisionTypes")
+  departmentName String?
+  documents      Documents[]  @relation("DivisionDocuments")
   departments    departments? @relation("DivisionDepartments", fields: [departmentId], references: [Id], onDelete: Cascade)
+  types          types[]      @relation("DivisionTypes")
 }
 
-
-
 model types {
-  Id             String      @id @default(uuid())
-  typeName       String      
-  docUpload      String[]    @default([])
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  documents      Documents[] @relation("TypeDocuments")
-  divisionId     String?
-  divisionName   String?  
-  divisions      divisions?  @relation("DivisionTypes", fields: [divisionId], references: [Id], onDelete: Cascade)
+  Id           String      @id @default(uuid())
+  typeName     String
+  docUpload    String[]    @default([])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  divisionId   String?
+  divisionName String?
+  documents    Documents[] @relation("TypeDocuments")
+  divisions    divisions?  @relation("DivisionTypes", fields: [divisionId], references: [Id], onDelete: Cascade)
 }
